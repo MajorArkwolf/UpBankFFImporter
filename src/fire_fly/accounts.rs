@@ -2,19 +2,19 @@ use serde::{Deserialize, Serialize};
 
 use super::general::Meta;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AccountsResponse {
     pub data: Vec<Account>,
     pub meta: Meta,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AccountResponse {
     pub data: Option<Account>,
     pub meta: Option<Meta>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Account {
     #[serde(rename = "type")]
     pub accounts_type: String,
@@ -22,7 +22,7 @@ pub struct Account {
     pub attributes: Attributes,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Attributes {
     pub created_at: String,
     pub updated_at: String,

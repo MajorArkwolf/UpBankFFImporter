@@ -5,13 +5,13 @@ use super::{
     pagination::Pagination,
 };
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AccountsResponse {
     pub data: Vec<Account>,
     pub links: Pagination,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Account {
     #[serde(rename = "type")]
     pub account_type: String,
@@ -21,7 +21,7 @@ pub struct Account {
     pub links: general::Links,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Attributes {
     #[serde(rename = "displayName")]
     pub display_name: String,
@@ -34,17 +34,17 @@ pub struct Attributes {
     pub created_at: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Relationships {
     pub transactions: Transactions,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transactions {
     pub links: TransactionsLinks,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TransactionsLinks {
     pub related: String,
 }

@@ -10,7 +10,7 @@ mod pagination;
 mod tags;
 mod transactions;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UpBank {
     client: reqwest::Client,
     pub accounts: Vec<Account>,
