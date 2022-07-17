@@ -13,10 +13,10 @@ mod transactions;
 #[derive(Debug)]
 pub struct UpBank {
     client: reqwest::Client,
-    accounts: Vec<Account>,
-    transactions: Vec<Transaction>,
-    categories: Vec<Categorie>,
-    tags: Vec<Tag>,
+    pub accounts: Vec<Account>,
+    pub transactions: Vec<Transaction>,
+    pub categories: Vec<Categorie>,
+    pub tags: Vec<Tag>,
 }
 
 //headersAPI= {'accept': 'application/json','Authorization': 'Bearer your_UP_token_here',}
