@@ -26,20 +26,6 @@ impl Config {
         Ok(config)
     }
 
-    pub fn override_with_args(&mut self, args: super::Args) {
-        if args.up_pan_token.is_some() {
-            self.up_pan_token = args.up_pan_token.unwrap();
-        }
-
-        if args.fire_fly_pan_token.is_some() {
-            self.up_pan_token = args.fire_fly_pan_token.unwrap();
-        }
-
-        if args.fire_fly_base_url.is_some() {
-            self.up_pan_token = args.fire_fly_base_url.unwrap();
-        }
-    }
-
     pub fn get_accounts(&self) -> Result<Vec<AccountMap>> {
         let mut account_vector: Vec<AccountMap> = vec![];
         for accounts in &self.account_mapping {

@@ -2,9 +2,13 @@ pub mod config;
 pub mod fire_fly;
 pub mod migrator;
 pub mod up_bank;
+use chrono::NaiveDate;
 use clap::Parser;
 use color_eyre::eyre::Result;
-use tracing::{debug, info};
+use tracing::{error, info};
+
+use std::fs::File;
+use std::io::prelude::*;
 
 use config::Config;
 
@@ -13,11 +17,9 @@ use config::Config;
 pub struct Args {
     /// Name of the person to greet
     #[clap(short, long, value_parser)]
-    up_pan_token: Option<String>,
-    #[clap(long, value_parser)]
-    fire_fly_pan_token: Option<String>,
-    #[clap(long, value_parser)]
-    fire_fly_base_url: Option<String>,
+    start_date: Option<String>,
+    #[clap(short, long, value_parser)]
+    end_date: Option<String>,
 }
 
 #[tokio::main]
@@ -29,8 +31,6 @@ async fn main() -> Result<()> {
     let mut config = Config::load("./settings.yaml")?;
     info!("Loaded config file");
     let args = Args::parse();
-
-    config.override_with_args(args);
     info!("Parsed arguments and updated config");
 
     let mut up_bank = up_bank::UpBank::create(config.up_pan_token.clone())?;
@@ -39,6 +39,32 @@ async fn main() -> Result<()> {
         config.fire_fly_base_url.clone(),
     )?;
     info!("FireFly and UpBank api initilised, but not connected yet");
+
+    let start_date = match &args.start_date {
+        Some(date_string) => {
+            match NaiveDate::parse_from_str(&date_string, "%d-%m-%Y") {
+                Ok(date_naive) => Some(date_naive),
+                Err(e) => {
+                    error!("Failed to parse arg start_date, error: {:?}", e);
+                    None
+                },
+            }
+        },
+        None => None,
+    };
+
+    let end_date = match &args.end_date {
+        Some(date_string) => {
+            match NaiveDate::parse_from_str(&date_string, "%d-%m-%Y") {
+                Ok(date_naive) => Some(date_naive),
+                Err(e) => {
+                    error!("Failed to parse arg end_date, error: {:?}", e);
+                    None
+                },
+            }
+        },
+        None => None,
+    };
 
     up_bank.ping().await?;
 
@@ -50,13 +76,7 @@ async fn main() -> Result<()> {
     }
     info!("Account validation completed, services connected");
 
-    let up_bank_transaction = up_bank.get_all_transactions().await?;
-
-    for trans in up_bank_transaction {
-        if !migrator::transaction_map::find_up_bank_transaction_in_fire_fly(&trans, &fire_fly).await? {
-            println!("Transaction: {} , not found", trans.id);
-        }
-    }
+    let up_bank_transaction = up_bank.get_all_transactions(start_date, end_date).await?;
 
     //println!("{:?}", up_bank.accounts);
 

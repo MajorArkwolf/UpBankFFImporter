@@ -75,10 +75,11 @@ impl FireFly {
     }
 
     pub async fn submit_new_transaction(&self, transaction: &transaction::TransactionPayload) -> Result<()> {
-        let payload = transaction::TransactionInsertRequest{error_if_duplicate_hash: false, apply_rules: true, fire_webhooks: true, group_title: "".to_string(), transactions: vec![transaction]};
+        let mut payload = transaction::TransactionInsertRequest{error_if_duplicate_hash: false, apply_rules: true, fire_webhooks: true, group_title: "".to_string(), transactions: Vec::new()};
+        payload.transactions.push(transaction.clone());
         let response = self.client
         .post(generate_url(&self.base_url,"transactions"))
-        .json(&transaction)
+        .json(&payload)
         .send()
         .await?;
 

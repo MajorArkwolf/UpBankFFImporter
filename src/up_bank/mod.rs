@@ -67,7 +67,7 @@ impl UpBank {
 
     pub async fn populate_data(&mut self) -> Result<()> {
         self.accounts = self.get_accounts().await?;
-        self.transactions = self.get_all_transactions().await?;
+        self.transactions = self.get_all_transactions(None, None).await?;
         self.categories = self.get_all_categories().await?;
         self.tags = self.get_all_tags().await?;
         Ok(())
@@ -98,8 +98,26 @@ impl UpBank {
         Ok(accounts)
     }
 
-    pub async fn get_all_transactions(&self) -> Result<Vec<Transaction>> {
+    pub async fn get_all_transactions(&self, start_date: Option<chrono::naive::NaiveDate>, end_date: Option<chrono::naive::NaiveDate>) -> Result<Vec<Transaction>> {
         let mut transactions: Vec<Transaction> = vec![];
+
+        let mut params: Vec<(String, String)> = vec![];
+
+        match start_date {
+            Some(info) => {
+                let date_filter = ("filter[since]".to_string(), info.to_string());
+                params.push(date_filter);
+            },
+            None => {},
+        }
+
+        match end_date {
+            Some(info) => {
+                let date_filter = ("filter[until]".to_string(), info.to_string());
+                params.push(date_filter);
+            },
+            None => {},
+        }
 
         let mut request_url = generate_url("transactions");
 
@@ -107,6 +125,7 @@ impl UpBank {
             let mut transaction_data = self
                 .client
                 .get(request_url)
+                .form(&params)
                 .send()
                 .await?
                 .json::<transactions::TransactionResponse>()

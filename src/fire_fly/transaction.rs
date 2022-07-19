@@ -114,7 +114,7 @@ pub struct TransactionInsertRequest {
     pub transactions: Vec<TransactionPayload>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct TransactionPayload {
     #[serde(rename = "type")]
     pub transaction_type: String,
