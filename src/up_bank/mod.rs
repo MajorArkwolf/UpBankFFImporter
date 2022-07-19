@@ -19,7 +19,6 @@ pub struct UpBank {
     pub tags: Vec<Tag>,
 }
 
-//headersAPI= {'accept': 'application/json','Authorization': 'Bearer your_UP_token_here',}
 fn generate_url(path: &str) -> String {
     format!("https://api.up.com.au/api/v1/{path}")
 }

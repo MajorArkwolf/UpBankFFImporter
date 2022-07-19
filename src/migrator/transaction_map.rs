@@ -15,9 +15,37 @@ pub fn convert_up_bank_transaction_to_fire_fly(up_bank_transaction: &up_bank::tr
     let mut fire_fly_transaction = fire_fly::transaction::TransactionPayload::default();
 
     fire_fly_transaction.external_id = Some(up_bank_transaction.id.clone());
-    //fire_fly_transaction.external_url = Some()
+    fire_fly_transaction.external_url = match &up_bank_transaction.links {
+        Some(links) => match &links.links_self {
+            Some(url) => Some(url.clone()),
+            None => None,
+        },
+        None => None,
+    };
+    fire_fly_transaction.amount = up_bank_transaction.attributes.amount.value.clone();
+    fire_fly_transaction.currency_code = Some(up_bank_transaction.attributes.amount.currency_code.clone());
     fire_fly_transaction.date = up_bank_transaction.attributes.created_at.clone();
     fire_fly_transaction.description = up_bank_transaction.attributes.description.clone();
+
+    if up_bank_transaction.attributes.amount.value_in_base_units < 0 {
+        // If value is less then 0, then the transaction is the source
+        
+        // fire_fly_transaction.source_id = up_bank_transaction.relationships.account.data.type.id;
+        match &up_bank_transaction.relationships.transfer_account.data {
+            Some(account) => todo!("validate if the account is our own or not"),
+            None => {},
+        }
+    } else {
+        // else the transaction is the destination.
+
+        // Convert this value into a fire fly account id
+        // fire_fly_transaction.destination_id = up_bank_transaction.relationships.account.data.type.id;
+    }
+
+    match &up_bank_transaction.attributes.round_up {
+        Some(round_up) => todo!(),
+        None => {}, 
+    }
 
     return fire_fly_transaction;
 }

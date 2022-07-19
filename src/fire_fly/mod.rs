@@ -60,7 +60,7 @@ impl FireFly {
 
     pub async fn find_transaction_by_external_id(&self, id: &str) -> Result<Vec<transaction::TransactionData>> {
 
-        let url_address = generate_url(&self.base_url, &format!("accounts//api/v1/search/transactions"));
+        let url_address = generate_url(&self.base_url, &format!("search/transactions"));
 
         let transactions = self
         .client
@@ -72,5 +72,20 @@ impl FireFly {
         .await?;
         
         Ok(transactions.data)
+    }
+
+    pub async fn submit_new_transaction(&self, transaction: &transaction::TransactionPayload) -> Result<()> {
+        let payload = transaction::TransactionInsertRequest{error_if_duplicate_hash: false, apply_rules: true, fire_webhooks: true, group_title: "".to_string(), transactions: vec![transaction]};
+        let response = self.client
+        .post(generate_url(&self.base_url,"transactions"))
+        .json(&transaction)
+        .send()
+        .await?;
+
+        if response.status() != 200 {
+            let error_info = response.text().await?;
+            return Err(eyre!("Failed to submit transaction({:?}), error: {}", transaction, error_info));
+        }
+        Ok(())
     }
 }
