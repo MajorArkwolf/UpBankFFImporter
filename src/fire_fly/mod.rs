@@ -3,8 +3,9 @@ use reqwest::header;
 
 use self::accounts::{Account, AccountResponse, AccountsResponse};
 
-mod accounts;
-mod general;
+pub mod accounts;
+pub mod general;
+pub mod transaction;
 
 #[derive(Debug)]
 pub struct FireFly {
@@ -53,7 +54,23 @@ impl FireFly {
             .json::<AccountResponse>()
             .await?
             .data
-            .ok_or(eyre!("account not found."))?;
+            .ok_or(eyre!("Firefly ID({}), account not found.", id))?;
         Ok(account)
+    }
+
+    pub async fn find_transaction_by_external_id(&self, id: &str) -> Result<Vec<transaction::TransactionData>> {
+
+        let url_address = generate_url(&self.base_url, &format!("accounts//api/v1/search/transactions"));
+
+        let transactions = self
+        .client
+        .get(url_address)
+        .query(&[("external_id_is", id)])
+        .send()
+        .await?
+        .json::<transaction::TransactionSearchRequest>()
+        .await?;
+        
+        Ok(transactions.data)
     }
 }

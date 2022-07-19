@@ -1,7 +1,7 @@
-mod config;
-mod fire_fly;
-mod mapper;
-mod up_bank;
+pub mod config;
+pub mod fire_fly;
+pub mod migrator;
+pub mod up_bank;
 use clap::Parser;
 use color_eyre::eyre::Result;
 use tracing::{debug, info};
@@ -40,15 +40,23 @@ async fn main() -> Result<()> {
     )?;
     info!("FireFly and UpBank api initilised, but not connected yet");
 
+    up_bank.ping().await?;
+
+    up_bank.populate_data().await?;
+
     let account_map = config.get_accounts()?;
     for account in account_map {
         account.validate(&up_bank, &fire_fly).await?
     }
     info!("Account validation completed, services connected");
 
-    up_bank.ping().await?;
+    let up_bank_transaction = up_bank.get_all_transactions().await?;
 
-    up_bank.populate_data().await?;
+    for trans in up_bank_transaction {
+        if !migrator::transaction_map::find_up_bank_transaction_in_fire_fly(&trans, &fire_fly).await? {
+            println!("Transaction: {} , not found", trans.id);
+        }
+    }
 
     //println!("{:?}", up_bank.accounts);
 

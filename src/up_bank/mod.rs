@@ -3,12 +3,12 @@ use reqwest::header;
 
 use self::{accounts::Account, categories::Categorie, tags::Tag, transactions::Transaction};
 
-mod accounts;
-mod categories;
-mod general;
-mod pagination;
-mod tags;
-mod transactions;
+pub mod accounts;
+pub mod categories;
+pub mod general;
+pub mod pagination;
+pub mod tags;
+pub mod transactions;
 
 #[derive(Debug, Clone)]
 pub struct UpBank {
