@@ -20,8 +20,14 @@ impl Migrator {
         Self {up_bank_api, fire_fly_api, account_map}
     }
 
-    pub fn migrate_transaction(start_date: Option<chrono::naive::NaiveDate>, end_date: Option<chrono::naive::NaiveDate>) -> Result<()> {
-        
+    pub async fn migrate_transactions(&self, start_date: Option<chrono::naive::NaiveDate>, end_date: Option<chrono::naive::NaiveDate>) -> Result<()> {
+
+        Ok(())
+    }
+
+    pub async fn migrate_transaction(&self, up_bank_transaction: &up_bank::transactions::Transaction) -> Result<()> {
+        let fire_fly_payload = transaction_map::convert_up_bank_transaction_to_fire_fly(up_bank_transaction);
+        self.fire_fly_api.submit_new_transaction(&fire_fly_payload).await?;
         Ok(())
     }
 }

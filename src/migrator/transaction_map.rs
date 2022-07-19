@@ -49,8 +49,3 @@ pub fn convert_up_bank_transaction_to_fire_fly(up_bank_transaction: &up_bank::tr
 
     return fire_fly_transaction;
 }
-
-pub async fn insert_up_bank_transaction_into_fire_fly(up_bank_transaction: &up_bank::transactions::Transaction, fire_fly: &fire_fly::FireFly) -> Result<()> {
-
-    Ok(())
-}
