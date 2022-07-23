@@ -1,5 +1,5 @@
 use crate::{fire_fly, up_bank};
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 
 pub async fn find_up_bank_transaction_in_fire_fly(
     up_bank_transaction: &up_bank::transactions::Transaction,
@@ -22,7 +22,7 @@ pub async fn get_fire_fly_transction_from_up_bank_id(
 
 pub fn convert_up_bank_transaction_to_fire_fly(
     up_bank_transaction: &up_bank::transactions::Transaction,
-) -> fire_fly::transaction::TransactionPayload {
+) -> Result<fire_fly::transaction::TransactionPayload> {
     let mut fire_fly_transaction = fire_fly::transaction::TransactionPayload::default();
 
     fire_fly_transaction.external_id = Some(up_bank_transaction.id.clone());
@@ -38,17 +38,39 @@ pub fn convert_up_bank_transaction_to_fire_fly(
 
     if up_bank_transaction.attributes.amount.value_in_base_units < 0 {
         // If value is less then 0, then the transaction is the source
+        match up_bank_transaction
+            .relationships
+            .account
+            .data
+            .as_ref()
+            .ok_or("this should have been a value")
+        {
+            Ok(data) => fire_fly_transaction.source_id = Some(data.id.clone()),
+            Err(e) => return Err(eyre!("this should have contained a valid id")),
+        };
 
-        // fire_fly_transaction.source_id = up_bank_transaction.relationships.account.data.type.id;
-        match &up_bank_transaction.relationships.transfer_account.data {
-            Some(account) => todo!("validate if the account is our own or not"),
-            None => {}
-        }
+        fire_fly_transaction.transaction_type = "withdrawal".to_string();
+
+        //match &up_bank_transaction.relationships.transfer_account.data {
+        //    Some(account) => todo!("validate if the account is our own or not"),
+        //    None => {}
+        //}
     } else {
         // else the transaction is the destination.
+        match up_bank_transaction
+            .relationships
+            .account
+            .data
+            .as_ref()
+            .ok_or("this should have been a value")
+        {
+            Ok(data) => fire_fly_transaction.destination_id = Some(data.id.clone()),
+            Err(e) => return Err(eyre!("this should have contained a valid id")),
+        };
 
+        fire_fly_transaction.transaction_type = "deposit".to_string();
         // Convert this value into a fire fly account id
-        // fire_fly_transaction.destination_id = up_bank_transaction.relationships.account.data.type.id;
+        //fire_fly_transaction.destination_id = up_bank_transaction.relationships.account.data.type.id;
     }
 
     match &up_bank_transaction.attributes.round_up {
@@ -56,5 +78,5 @@ pub fn convert_up_bank_transaction_to_fire_fly(
         None => {}
     }
 
-    return fire_fly_transaction;
+    Ok(fire_fly_transaction)
 }

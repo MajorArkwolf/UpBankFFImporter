@@ -58,34 +58,51 @@ impl FireFly {
         Ok(account)
     }
 
-    pub async fn find_transaction_by_external_id(&self, id: &str) -> Result<Vec<transaction::TransactionData>> {
-
-        let url_address = generate_url(&self.base_url, &format!("search/transactions"));
+    pub async fn find_transaction_by_external_id(
+        &self,
+        id: &str,
+    ) -> Result<Vec<transaction::TransactionData>> {
+        let url_address = generate_url(&self.base_url, "search/transactions");
 
         let transactions = self
-        .client
-        .get(url_address)
-        .query(&[("external_id_is", id)])
-        .send()
-        .await?
-        .json::<transaction::TransactionSearchRequest>()
-        .await?;
-        
+            .client
+            .get(url_address)
+            .query(&[("external_id_is", id)])
+            .send()
+            .await?
+            .json::<transaction::TransactionSearchRequest>()
+            .await?;
+
         Ok(transactions.data)
     }
 
-    pub async fn submit_new_transaction(&self, transaction: &transaction::TransactionPayload) -> Result<()> {
-        let mut payload = transaction::TransactionInsertRequest{error_if_duplicate_hash: false, apply_rules: true, fire_webhooks: true, group_title: "".to_string(), transactions: Vec::new()};
+    pub async fn submit_new_transaction(
+        &self,
+        transaction: &transaction::TransactionPayload,
+    ) -> Result<()> {
+        let mut payload = transaction::TransactionInsertRequest {
+            error_if_duplicate_hash: false,
+            apply_rules: true,
+            fire_webhooks: true,
+            group_title: "".to_string(),
+            transactions: Vec::new(),
+        };
         payload.transactions.push(transaction.clone());
-        let response = self.client
-        .post(generate_url(&self.base_url,"transactions"))
-        .json(&payload)
-        .send()
-        .await?;
-
-        if response.status() != 200 {
+        let response = self
+            .client
+            .post(generate_url(&self.base_url, "transactions"))
+            .json(&payload)
+            .send()
+            .await?;
+        let status_code = response.status();
+        if status_code != 200 {
             let error_info = response.text().await?;
-            return Err(eyre!("Failed to submit transaction({:?}), error: {}", transaction, error_info));
+            return Err(eyre!(
+                "Failed to submit transaction({:?}), error code: {}, error: {}",
+                transaction,
+                status_code,
+                error_info
+            ));
         }
         Ok(())
     }

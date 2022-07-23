@@ -53,7 +53,7 @@ impl Migrator {
         up_bank_transaction: &up_bank::transactions::Transaction,
     ) -> Result<()> {
         let fire_fly_payload =
-            transaction_map::convert_up_bank_transaction_to_fire_fly(up_bank_transaction);
+            transaction_map::convert_up_bank_transaction_to_fire_fly(up_bank_transaction)?;
         self.fire_fly_api
             .submit_new_transaction(&fire_fly_payload)
             .await?;
