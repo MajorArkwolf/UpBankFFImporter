@@ -1,7 +1,8 @@
 use color_eyre::eyre::{eyre, Result};
 use reqwest::header;
+use tracing::{debug};
 
-use self::accounts::{Account, AccountResponse, AccountsResponse};
+use self::accounts::{Account, AccountResponse};
 
 pub mod accounts;
 pub mod general;
@@ -62,17 +63,17 @@ impl FireFly {
         &self,
         id: &str,
     ) -> Result<Vec<transaction::TransactionData>> {
-        let url_address = generate_url(&self.base_url, "search/transactions");
+        let mut url_address = generate_url(&self.base_url, "search/transactions");
+        url_address = format!("{}?query=external_id_is%3A{}", url_address, id);
 
         let transactions = self
             .client
             .get(url_address)
-            .query(&[("external_id_is", id)])
             .send()
             .await?
             .json::<transaction::TransactionSearchRequest>()
             .await?;
-
+        debug!("Transaction ({}) returned {} enteries", id, transactions.data.len());
         Ok(transactions.data)
     }
 

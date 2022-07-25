@@ -8,9 +8,6 @@ use color_eyre::eyre::Result;
 use migrator::Migrator;
 use tracing::{error, info};
 
-use std::fs::File;
-use std::io::prelude::*;
-
 use config::Config;
 
 #[derive(Parser, Debug)]

@@ -12,3 +12,4 @@ Cargo.lock
 .env
 .vscode/
 settings.yaml
+data/

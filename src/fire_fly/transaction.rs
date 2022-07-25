@@ -61,7 +61,7 @@ pub struct Transaction {
     pub reconciled: bool,
     pub notes: Option<String>,
     pub tags: Option<serde_json::Value>,
-    pub internal_reference: String,
+    pub internal_reference: Option<String>,
     pub external_id: Option<String>,
     pub external_url: Option<String>,
     pub original_source: Option<String>,

@@ -1,6 +1,8 @@
 use crate::{fire_fly, up_bank};
 use color_eyre::eyre::{eyre, Result};
 
+use super::account_map;
+
 pub async fn find_up_bank_transaction_in_fire_fly(
     up_bank_transaction: &up_bank::transactions::Transaction,
     fire_fly: &fire_fly::FireFly,
@@ -20,8 +22,16 @@ pub async fn get_fire_fly_transction_from_up_bank_id(
         .await
 }
 
+pub fn is_account_internal(account_id: &str, account_map: &Vec<account_map::AccountMap>) -> Option<String> {
+    match account_map.into_iter().find(|x| x.up_account_id == account_id) {
+        Some(result) => Some(result.fire_fly_account_id.clone()),
+        None => None,
+    }
+}
+
 pub fn convert_up_bank_transaction_to_fire_fly(
     up_bank_transaction: &up_bank::transactions::Transaction,
+    account_map: &Vec<account_map::AccountMap>
 ) -> Result<fire_fly::transaction::TransactionPayload> {
     let mut fire_fly_transaction = fire_fly::transaction::TransactionPayload::default();
 
@@ -30,13 +40,24 @@ pub fn convert_up_bank_transaction_to_fire_fly(
         Some(links) => links.links_self.as_ref().map(|url| url.clone()),
         None => None,
     };
-    fire_fly_transaction.amount = up_bank_transaction.attributes.amount.value.clone();
+    fire_fly_transaction.amount = up_bank_transaction.attributes.amount.value.clone().replace('-', "");
     fire_fly_transaction.currency_code =
         Some(up_bank_transaction.attributes.amount.currency_code.clone());
     fire_fly_transaction.date = up_bank_transaction.attributes.created_at.clone();
     fire_fly_transaction.description = up_bank_transaction.attributes.description.clone();
 
+    fire_fly_transaction.order = Some(0); // Unsure what value should be here, however it is required to be populated
+
+    match &up_bank_transaction.attributes.foreign_amount {
+        Some(foriegn_amount) => {
+            fire_fly_transaction.foreign_amount = Some(foriegn_amount.value.clone());
+            fire_fly_transaction.foreign_currency_code = Some(foriegn_amount.currency_code.clone());
+        },
+        None => fire_fly_transaction.foreign_amount = Some("0".to_string()),
+    }
+
     if up_bank_transaction.attributes.amount.value_in_base_units < 0 {
+        fire_fly_transaction.transaction_type = "withdrawal".to_string();
         // If value is less then 0, then the transaction is the source
         match up_bank_transaction
             .relationships
@@ -45,17 +66,26 @@ pub fn convert_up_bank_transaction_to_fire_fly(
             .as_ref()
             .ok_or("this should have been a value")
         {
-            Ok(data) => fire_fly_transaction.source_id = Some(data.id.clone()),
-            Err(e) => return Err(eyre!("this should have contained a valid id")),
+            Ok(data) => {
+                let account = is_account_internal(&data.id, account_map).ok_or(eyre!("account should have mapped across from upbank to firefly"))?;
+                fire_fly_transaction.source_id = Some(account);
+            },
+            Err(e) => return Err(eyre!("this should have contained a valid id, error: {}", e)),
         };
 
-        fire_fly_transaction.transaction_type = "withdrawal".to_string();
-
-        //match &up_bank_transaction.relationships.transfer_account.data {
-        //    Some(account) => todo!("validate if the account is our own or not"),
-        //    None => {}
-        //}
+        match &up_bank_transaction.relationships.transfer_account.data {
+            Some(transfer_account) => {
+                match is_account_internal(&transfer_account.id, account_map) {
+                    Some(fire_fly_id) => fire_fly_transaction.destination_id = Some(fire_fly_id), // If its an account mapped in firefly then its better to link it directly.
+                    None => fire_fly_transaction.destination_name = Some(transfer_account.dat_type.clone()), // Else just link the name of the account instead.
+                }
+            },
+            None => fire_fly_transaction.destination_name = Some("(unknown destination account)".to_string()), 
+        }
+        
     } else {
+        fire_fly_transaction.transaction_type = "deposit".to_string();
+
         // else the transaction is the destination.
         match up_bank_transaction
             .relationships
@@ -64,18 +94,22 @@ pub fn convert_up_bank_transaction_to_fire_fly(
             .as_ref()
             .ok_or("this should have been a value")
         {
-            Ok(data) => fire_fly_transaction.destination_id = Some(data.id.clone()),
-            Err(e) => return Err(eyre!("this should have contained a valid id")),
+            Ok(data) => {
+                let account = is_account_internal(&data.id, account_map).ok_or(eyre!("account should have mapped across from upbank to firefly, account number: {}", data.id))?;
+                fire_fly_transaction.destination_id = Some(account);
+            },
+            Err(e) => return Err(eyre!("this should have contained a valid id, error: {}", e)),
         };
 
-        fire_fly_transaction.transaction_type = "deposit".to_string();
-        // Convert this value into a fire fly account id
-        //fire_fly_transaction.destination_id = up_bank_transaction.relationships.account.data.type.id;
-    }
-
-    match &up_bank_transaction.attributes.round_up {
-        Some(round_up) => todo!(),
-        None => {}
+        match &up_bank_transaction.relationships.transfer_account.data {
+            Some(transfer_account) => {
+                match is_account_internal(&transfer_account.id, account_map) {
+                    Some(fire_fly_id) => fire_fly_transaction.source_id = Some(fire_fly_id), // If its an account mapped in firefly then its better to link it directly.
+                    None => fire_fly_transaction.source_name = Some(transfer_account.dat_type.clone()), // Else just link the name of the account instead.
+                }
+            },
+            None => fire_fly_transaction.source_name = Some("(unknown destination account)".to_string()),
+        }
     }
 
     Ok(fire_fly_transaction)
