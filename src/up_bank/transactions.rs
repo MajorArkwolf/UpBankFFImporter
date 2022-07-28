@@ -10,7 +10,7 @@ pub struct TransactionResponse {
     pub links: Pagination,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash)]
 pub struct Transaction {
     #[serde(rename = "type")]
     pub datum_type: String,
@@ -20,7 +20,7 @@ pub struct Transaction {
     pub links: Option<general::Links>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash)]
 pub struct Attributes {
     pub status: String, // Type Incorrect (enum)
     #[serde(rename = "rawText")]
@@ -45,7 +45,7 @@ pub struct Attributes {
     pub created_at: String, // Type Incorrect (datetime)
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash)]
 pub struct Relationships {
     pub account: AccountID,
     #[serde(rename = "transferAccount")]
@@ -56,52 +56,52 @@ pub struct Relationships {
     pub tags: general::Tags,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash)]
 pub struct AccountID {
     pub data: Option<general::Data>,
     pub links: Option<general::LinksRelated>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash)]
 pub struct Category {
     pub data: Option<general::Data>,
     pub links: Option<CategoryLinks>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash)]
 pub struct ParentCategory {
     pub data: Option<general::Data>,
     pub links: Option<general::LinksRelated>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash)]
 pub struct CategoryLinks {
     #[serde(rename = "self")]
     pub links_self: Option<String>,
     pub related: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash)]
 pub struct HoldInfoObject {
     pub amount: MoneyObject,
     #[serde(rename = "foreignAmount")]
     pub foreign_amount: Option<MoneyObject>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash)]
 pub struct RoundUpObject {
     pub amount: MoneyObject,
     #[serde(rename = "boostPortion")]
     pub boost_portion: Option<MoneyObject>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash)]
 pub struct Cashback {
     pub description: String,
     pub amount: MoneyObject,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Hash)]
 pub struct CardPurchaseMethod {
     pub method: String,
     #[serde(rename = "cardNumberSuffix")]

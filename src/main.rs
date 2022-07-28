@@ -5,7 +5,7 @@ pub mod up_bank;
 pub mod operation;
 use clap::Parser;
 use color_eyre::eyre::Result;
-use tracing::{error, info};
+use tracing::{info};
 
 use config::Config;
 

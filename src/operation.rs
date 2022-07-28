@@ -36,7 +36,7 @@ pub async fn import_data(args: Args, up_bank: up_bank::UpBank, fire_fly: fire_fl
         None => None,
     };
 
-    let migrator = Migrator::create(up_bank, fire_fly, account_map);
+    let mut migrator = Migrator::create(up_bank, fire_fly, account_map);
     info!("Beginning migration of data");
     migrator.migrate_transactions(start_date, end_date).await?;
 
