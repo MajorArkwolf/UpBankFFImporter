@@ -2,13 +2,18 @@ pub mod config;
 pub mod fire_fly;
 pub mod migrator;
 pub mod up_bank;
-use chrono::NaiveDate;
+pub mod operation;
 use clap::Parser;
 use color_eyre::eyre::Result;
-use migrator::Migrator;
 use tracing::{error, info};
 
 use config::Config;
+
+#[derive(Parser, Debug, Clone, clap::ArgEnum)]
+enum Action {
+    Import,
+    GetAccountInfo,
+}
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -18,6 +23,8 @@ pub struct Args {
     start_date: Option<String>,
     #[clap(short, long, value_parser)]
     end_date: Option<String>,
+    #[clap(arg_enum, default_value_t = Action::Import)]
+    action: Action,
 }
 
 #[tokio::main]
@@ -38,38 +45,16 @@ async fn main() -> Result<()> {
     )?;
     info!("FireFly and UpBank api initilised, but not connected yet");
 
-    let start_date = match &args.start_date {
-        Some(date_string) => match NaiveDate::parse_from_str(date_string, "%d-%m-%Y") {
-            Ok(date_naive) => Some(date_naive),
-            Err(e) => {
-                error!("Failed to parse arg start_date, error: {:?}", e);
-                None
-            }
-        },
-        None => None,
-    };
-
-    let end_date = match &args.end_date {
-        Some(date_string) => match NaiveDate::parse_from_str(date_string, "%d-%m-%Y") {
-            Ok(date_naive) => Some(date_naive),
-            Err(e) => {
-                error!("Failed to parse arg end_date, error: {:?}", e);
-                None
-            }
-        },
-        None => None,
-    };
-
     up_bank.populate_data().await?;
 
-    let account_map = config.get_accounts()?;
-    for account in &account_map {
-        account.validate(&up_bank, &fire_fly).await?
-    }
+    let account_map = config.get_accounts(&up_bank, &fire_fly).await?;
+
     info!("Account validation completed, services connected");
 
-    let migrator = Migrator::create(up_bank, fire_fly, account_map);
-    migrator.migrate_transactions(start_date, end_date).await?;
+    match args.action {
+        Action::Import => operation::import_data(args, up_bank, fire_fly, account_map).await?,
+        Action::GetAccountInfo => operation::print_out_up_bank_account_info(up_bank)?,
+    }
 
     Ok(())
 }

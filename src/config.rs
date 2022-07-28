@@ -1,9 +1,12 @@
+use crate::fire_fly::FireFly;
+use crate::up_bank::UpBank;
+use color_eyre::eyre::{eyre, Result};
 use super::migrator::account_map::AccountMap;
-use color_eyre::eyre::{Result};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
 use std::vec;
+use tracing::{info, debug};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
@@ -26,13 +29,20 @@ impl Config {
         Ok(config)
     }
 
-    pub fn get_accounts(&self) -> Result<Vec<AccountMap>> {
+    pub async fn get_accounts(&self, up_bank: &UpBank, fire_fly: &FireFly) -> Result<Vec<AccountMap>> {
         let mut account_vector: Vec<AccountMap> = vec![];
-        for accounts in &self.account_mapping {
-            let account_vec: Vec<String> =
-                accounts.clone().split(':').map(|s| s.to_string()).collect();
+        for up_account_id in &self.account_mapping {
+            up_bank
+            .accounts
+            .iter()
+            .find(|&x| x.id == *up_account_id)
+            .ok_or(eyre!(
+                "Up Bank did not have a account id that matched the one supplied"
+            ))?;
 
-            let new_account = AccountMap::create(account_vec[0].clone(), account_vec[1].clone());
+            let fire_fly_account_id = fire_fly.get_account_by_account_number(&up_account_id).await?.id;
+            debug!("Found Up ID {} linked to Firefly ID {}", up_account_id, fire_fly_account_id);
+            let new_account = AccountMap::create(up_account_id.clone(), fire_fly_account_id);
             account_vector.push(new_account);
         }
 

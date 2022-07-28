@@ -2,10 +2,12 @@ use serde::{Deserialize, Serialize};
 
 use super::general::Meta;
 
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AccountsResponse {
+    #[serde(default)]
     pub data: Vec<Account>,
-    pub meta: Meta,
+    pub meta: Option<Meta>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
