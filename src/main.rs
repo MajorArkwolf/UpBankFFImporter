@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     info!("Starting services");
-    let config = Config::load("./settings.yaml")?;
+    let config = Config::load("./config/settings.yaml")?;
     info!("Loaded config file");
     let args = Args::parse();
     info!("Parsed arguments and updated config");
@@ -43,16 +43,14 @@ async fn main() -> Result<()> {
         config.fire_fly_pan_token.clone(),
         config.fire_fly_base_url.clone(),
     )?;
-    info!("FireFly and UpBank api initilised, but not connected yet");
+
+    info!("FireFly and UpBank api initilised");
 
     up_bank.populate_data().await?;
-
-    let account_map = config.get_accounts(&up_bank, &fire_fly).await?;
-
-    info!("Account validation completed, services connected");
+    info!("Up Bank connected and information gathered");
 
     match args.action {
-        Action::Import => operation::import_data(args, up_bank, fire_fly, account_map).await?,
+        Action::Import => operation::import_data(args, up_bank, fire_fly, config).await?,
         Action::GetAccountInfo => operation::print_out_up_bank_account_info(up_bank)?,
     }
 

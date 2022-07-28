@@ -1,11 +1,16 @@
 use color_eyre::eyre::Result;
-use crate::{up_bank, fire_fly, migrator::account_map::AccountMap};
+use crate::config::Config;
+use crate::{up_bank, fire_fly};
 use crate::migrator::Migrator;
 use super::Args;
 use tracing::{error, info};
 use chrono::NaiveDate;
 
-pub async fn import_data(args: Args, up_bank: up_bank::UpBank, fire_fly: fire_fly::FireFly, account_map: Vec<AccountMap>) -> Result<()> {
+pub async fn import_data(args: Args, up_bank: up_bank::UpBank, fire_fly: fire_fly::FireFly, config: Config) -> Result<()> {
+    let account_map = config.get_accounts(&up_bank, &fire_fly).await?;
+
+    info!("Account validation completed, services connected");
+
     info!("Begining import of transaction data");
 
     let start_date = match &args.start_date {
