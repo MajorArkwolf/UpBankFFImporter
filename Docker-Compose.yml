@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  up_bank_firefly_importer:
+    build: .
+    environment:
+      - RUST_LOG=debug
+    volumes:
+      - ./config:/config
+      - ./logs:/logs
