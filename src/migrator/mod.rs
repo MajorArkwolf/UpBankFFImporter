@@ -48,11 +48,13 @@ impl Migrator {
 
         info!("Importing {} transactions", up_bank_transaction.len());
 
+        let tag = Some(format!("UBFF3Import-{}", chrono::offset::Local::now()));
+
         for transaction in up_bank_transaction {
             let was_found = transaction_map::find_up_bank_transaction_in_fire_fly(&transaction, fire_fly).await?;
             if !was_found {
                 debug!("Importing up bank transaction: {}", transaction.id);
-                match self.migrate_transaction(&transaction).await {
+                match self.migrate_transaction(&transaction, &tag).await {
                     Ok(_) => continue,
                     Err(e) => error!(
                         "Transaction({}) failed to import, error: {:?}",
@@ -72,9 +74,14 @@ impl Migrator {
     pub async fn migrate_transaction(
         &self,
         up_bank_transaction: &up_bank::transactions::Transaction,
+        import_tag: &Option<String>
     ) -> Result<()> {
-        let fire_fly_payload =
+        let mut fire_fly_payload =
             transaction_map::convert_up_bank_transaction_to_fire_fly(up_bank_transaction, &self.account_map)?;
+        match import_tag {
+            Some(tag) => fire_fly_payload.tags.push(tag.to_string()),
+            None => {},
+        }
         self.fire_fly_api
             .submit_new_transaction(&fire_fly_payload)
             .await?;
