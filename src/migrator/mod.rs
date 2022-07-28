@@ -45,25 +45,39 @@ impl Migrator {
         .filter(|e| self.account_map.iter().any(|f| f.up_account_id == e.relationships.account.data.as_ref().unwrap().id))
         .collect();
 
-        info!("Importing {} transactions", up_bank_transaction.len());
+        info!("Processing {} transactions", up_bank_transaction.len());
+        let mut not_found_counter = 0;
+        let mut needs_update_counter = 0;
+        let mut already_imported_counter = 0;
 
         let tag = format!("UBFF3Import-{}", chrono::offset::Local::now());
 
         for transaction in up_bank_transaction {
             match self.transaction_tracker.find_transaction(&transaction) {
-                transaction_tracker::Status::NotFound => { self.new_transaction(&transaction, &tag).await?} ,
-                transaction_tracker::Status::FoundExact => { debug!("Transaction({}) found in TransactionMap with no update required, skipping", transaction.id) },
-                transaction_tracker::Status::FoundNotExact => self.update_transaction(&transaction, &tag).await,
+                transaction_tracker::Status::NotFound => { 
+                    self.new_transaction(&transaction, &tag).await?;
+                    not_found_counter += 1;
+                } ,
+                transaction_tracker::Status::FoundExact => { 
+                    debug!("Transaction({}) found in TransactionMap with no update required, skipping", transaction.id);
+                    already_imported_counter += 1;
+                },
+                transaction_tracker::Status::FoundNotExact => {
+                    self.update_transaction(&transaction, &tag).await?;
+                    needs_update_counter += 1;
+                },
             };
         }
 
-        info!("Import complete");
+        info!("Import complete, {} new transactions, {} updated transactions and {} were already imported and identical", not_found_counter, needs_update_counter, already_imported_counter);
 
         Ok(())
     }
 
-    pub async fn update_transaction(&mut self, transaction: &up_bank::transactions::Transaction, tag: &str) {
+    pub async fn update_transaction(&mut self, transaction: &up_bank::transactions::Transaction, tag: &str) -> Result<()> {
         debug!("coming soon tm");
+        self.transaction_tracker.update_transaction(transaction)?;
+        Ok(())
     }
 
     pub async fn new_transaction(&mut self, transaction: &up_bank::transactions::Transaction, tag: &str) -> Result<()> {

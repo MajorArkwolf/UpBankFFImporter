@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use color_eyre::eyre::Result;
-
+use color_eyre::eyre::{Result, eyre};
 use serde::{Deserialize, Serialize};
 use tracing::{error, warn, debug};
 
@@ -94,6 +93,14 @@ impl TransactionHashData {
         match self.transaction_map.insert(transaction.id.clone(), hash) {
             Some(new_val) => warn!("Transaction id({}) was already found, updated hash to: {}", transaction.id, new_val),
             None => {},
+        }
+    }
+
+    pub fn update_transaction(&mut self, transaction: &up_bank::transactions::Transaction) -> Result<()> {
+        let hash = calculate_hash(&transaction);
+        match self.transaction_map.insert(transaction.id.clone(), hash) {
+            Some(_) => Ok(()),
+            None => Err(eyre!("Key was not found when updating transaction, update should only be called on an existing key")),
         }
     }
 }
