@@ -23,6 +23,7 @@ pub struct Args {
     start_date: Option<String>,
     #[clap(short, long, value_parser)]
     end_date: Option<String>,
+    #[clap(short, long, value_parser)]
     date_range: Option<i64>,
     #[clap(arg_enum, default_value_t = Action::Import)]
     action: Action,

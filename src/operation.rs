@@ -4,7 +4,7 @@ use crate::migrator::Migrator;
 use crate::{fire_fly, up_bank};
 use chrono::{NaiveDate, Utc};
 use color_eyre::eyre::{eyre, Result};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 pub async fn import_data(
     args: Args,
@@ -15,9 +15,6 @@ pub async fn import_data(
     let account_map = config.get_accounts(&up_bank, &fire_fly).await?;
 
     info!("Account validation completed, services connected");
-
-    info!("Begining import of transaction data");
-
     let mut start_date = match &args.start_date {
         Some(date_string) => match NaiveDate::parse_from_str(date_string, "%d-%m-%Y") {
             Ok(date_naive) => {
@@ -58,6 +55,8 @@ pub async fn import_data(
             }
         };
 
+        debug!("End date set to: {}", end_date_temp);
+
         let duration: chrono::Duration = match args.date_range {
             Some(days) => chrono::Duration::days(days),
             None => {
@@ -67,8 +66,13 @@ pub async fn import_data(
             }
         };
 
+        debug!("Date range set to: {}", duration);
+
         start_date = match end_date_temp.checked_sub_signed(duration) {
-            Some(date) => Some(date),
+            Some(date) => {
+                debug!("Start date calculated as: {}", date);
+                Some(date)
+            }
             None => {
                 return Err(eyre!("Failed to determine a valid start date from the date range provided, End Date: {}, Date Range: {}", end_date_temp, duration));
             }

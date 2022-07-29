@@ -1,3 +1,4 @@
+use chrono::{Local, NaiveDateTime, TimeZone, Utc};
 use color_eyre::eyre::{eyre, Result};
 use reqwest::header;
 
@@ -104,17 +105,25 @@ impl UpBank {
 
         let mut params: Vec<(String, String)> = vec![];
 
+        let time = Utc::now().naive_local().time();
+
         match start_date {
-            Some(info) => {
-                let date_filter = ("filter[since]".to_string(), info.to_string());
+            Some(date) => {
+                let date_time = Local
+                    .from_local_datetime(&NaiveDateTime::new(date, time))
+                    .unwrap();
+                let date_filter = ("filter[since]".to_string(), date_time.to_rfc3339());
                 params.push(date_filter);
             }
             None => {}
         }
 
         match end_date {
-            Some(info) => {
-                let date_filter = ("filter[until]".to_string(), info.to_string());
+            Some(date) => {
+                let date_time = Local
+                    .from_local_datetime(&NaiveDateTime::new(date, time))
+                    .unwrap();
+                let date_filter = ("filter[until]".to_string(), date_time.to_rfc3339());
                 params.push(date_filter);
             }
             None => {}
@@ -126,7 +135,7 @@ impl UpBank {
             let mut transaction_data = self
                 .client
                 .get(request_url)
-                .form(&params)
+                .query(&params)
                 .send()
                 .await?
                 .json::<transactions::TransactionResponse>()
