@@ -68,7 +68,7 @@ pub fn convert_up_bank_transaction_to_fire_fly(
         .category
         .data
         .as_ref()
-        .map(|f| f.id.clone().replace("-", "_"));
+        .map(|f| f.id.clone().replace('-', "_"));
 
     match &up_bank_transaction.attributes.foreign_amount {
         Some(foriegn_amount) => {

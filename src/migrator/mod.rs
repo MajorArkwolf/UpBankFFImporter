@@ -1,7 +1,11 @@
-use crate::{fire_fly, up_bank};
+use std::collections::HashSet;
+
+use crate::{
+    fire_fly, migrator::transaction_map::get_fire_fly_transction_from_up_bank_id, up_bank,
+};
 
 use self::{account_map::AccountMap, transaction_tracker::TransactionHashData};
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 use tracing::{debug, error, info};
 
 pub mod account_map;
@@ -70,7 +74,7 @@ impl Migrator {
                     already_imported_counter += 1;
                 }
                 transaction_tracker::Status::FoundNotExact => {
-                    self.update_transaction(&transaction, &tag).await?;
+                    self.update_transaction(&transaction).await?;
                     needs_update_counter += 1;
                 }
             };
@@ -84,9 +88,54 @@ impl Migrator {
     pub async fn update_transaction(
         &mut self,
         transaction: &up_bank::transactions::Transaction,
-        tag: &str,
     ) -> Result<()> {
-        debug!("coming soon tm");
+        let fire_fly_transactions =
+            get_fire_fly_transction_from_up_bank_id(transaction, &self.fire_fly_api).await?;
+
+        // Error out if multiple transactions are found as cant determine which one should be updated.
+        if fire_fly_transactions.len() != 1 {
+            return Err(eyre!("Only a single transaction matching a external id should have been in fire_fly, however {} were returned. External ID: {}", fire_fly_transactions.len(), transaction.id));
+        }
+
+        // Remove the single transaction out of the array
+        let fire_fly_transaction = fire_fly_transactions
+            .into_iter()
+            .next()
+            .ok_or(eyre!("A transaction should have existed in the array"))?;
+
+        let mut fire_fly_transaction = fire_fly_transaction
+            .attributes
+            .transactions
+            .into_iter()
+            .next()
+            .ok_or_else(|| eyre!("A transaction should have existed here"))?;
+
+        // Grab the latest category
+        fire_fly_transaction.category_name = transaction
+            .relationships
+            .category
+            .data
+            .as_ref()
+            .map(|f| f.id.clone().replace('-', "_"));
+
+        // Collect all the tags in up bank
+        let transaction_tags: Vec<String> = transaction
+            .relationships
+            .tags
+            .data
+            .iter()
+            .map(|f| f.dat_type.clone())
+            .collect();
+
+        // Merge tags into one
+        fire_fly_transaction.tags.extend(transaction_tags);
+
+        // Remove duplicates
+        dedup(&mut fire_fly_transaction.tags);
+
+        self.fire_fly_api
+            .update_transaction(fire_fly_transaction)
+            .await?;
         self.transaction_tracker.update_transaction(transaction)?;
         Ok(())
     }
@@ -140,4 +189,10 @@ impl Migrator {
 
         Ok(())
     }
+}
+
+fn dedup(v: &mut Vec<String>) {
+    // note the Copy constraint
+    let mut uniques = HashSet::new();
+    v.retain(|e| uniques.insert(e.clone()));
 }

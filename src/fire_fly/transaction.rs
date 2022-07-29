@@ -60,7 +60,8 @@ pub struct Transaction {
     pub bill_name: Option<String>,
     pub reconciled: bool,
     pub notes: Option<String>,
-    pub tags: Option<serde_json::Value>,
+    #[serde(default)]
+    pub tags: Vec<String>,
     pub internal_reference: Option<String>,
     pub external_id: Option<String>,
     pub external_url: Option<String>,
@@ -139,6 +140,7 @@ pub struct TransactionPayload {
     pub piggy_bank_name: Option<String>,
     pub bill_id: Option<String>,
     pub bill_name: Option<String>,
+    #[serde(default)]
     pub tags: Vec<String>,
     pub notes: Option<String>,
     pub internal_reference: Option<String>,

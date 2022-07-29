@@ -14,8 +14,6 @@ pub struct FireFly {
     base_url: String,
 }
 
-// /api/v1/search/accounts
-// /api/v1/search/transactions
 fn generate_url(base: &str, path: &str) -> String {
     format!("http://{base}/api/v1/{path}")
 }
@@ -146,6 +144,19 @@ impl FireFly {
                 error_info
             ));
         }
+        Ok(())
+    }
+
+    pub async fn update_transaction(&self, transaction: transaction::Transaction) -> Result<()> {
+        let address = format!("transactions/{}", transaction.transaction_journal_id);
+        let url_address = generate_url(&self.base_url, &address);
+
+        self.client
+            .put(url_address)
+            .json(&transaction)
+            .send()
+            .await?;
+
         Ok(())
     }
 }
