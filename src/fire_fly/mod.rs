@@ -1,6 +1,6 @@
 use color_eyre::eyre::{eyre, Result};
 use reqwest::header;
-use tracing::{debug};
+use tracing::debug;
 
 use self::accounts::{Account, AccountResponse, AccountsResponse};
 
@@ -48,13 +48,13 @@ impl FireFly {
 
     pub async fn get_all_accounts(&self) -> Result<Vec<Account>> {
         let accounts = self
-        .client
-        .get(generate_url(&self.base_url, &format!("accounts")))
-        .send()
-        .await?
-        .json::<AccountsResponse>()
-        .await?
-        .data;
+            .client
+            .get(generate_url(&self.base_url, "accounts"))
+            .send()
+            .await?
+            .json::<AccountsResponse>()
+            .await?
+            .data;
 
         Ok(accounts)
     }
@@ -68,14 +68,11 @@ impl FireFly {
             .json::<AccountResponse>()
             .await?
             .data
-            .ok_or(eyre!("Firefly ID({}), account not found.", id))?;
+            .ok_or_else(|| eyre!("Firefly ID({}), account not found.", id))?;
         Ok(account)
     }
 
-    pub async fn get_account_by_account_number(&self,
-        id: &str,
-    ) -> Result<Account>
-    {
+    pub async fn get_account_by_account_number(&self, id: &str) -> Result<Account> {
         let mut url_address = generate_url(&self.base_url, "search/accounts");
         url_address = format!("{}?query={}&type=all&field=number", url_address, id);
         let accounts = self
@@ -91,7 +88,10 @@ impl FireFly {
             return Err(eyre!("When trying to find a unique account by account id, {} accounts were found, should have been 1", accounts.len()));
         }
 
-        let account = accounts.into_iter().next().ok_or(eyre!("An account should have existed in the array"))?;
+        let account = accounts
+            .into_iter()
+            .next()
+            .ok_or(eyre!("An account should have existed in the array"))?;
 
         Ok(account)
     }
@@ -110,7 +110,11 @@ impl FireFly {
             .await?
             .json::<transaction::TransactionSearchRequest>()
             .await?;
-        debug!("Transaction ({}) returned {} enteries", id, transactions.data.len());
+        debug!(
+            "Transaction ({}) returned {} enteries",
+            id,
+            transactions.data.len()
+        );
         Ok(transactions.data)
     }
 

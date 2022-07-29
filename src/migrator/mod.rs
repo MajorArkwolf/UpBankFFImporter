@@ -1,8 +1,8 @@
-use crate::{up_bank, fire_fly};
+use crate::{fire_fly, up_bank};
 
 use self::{account_map::AccountMap, transaction_tracker::TransactionHashData};
 use color_eyre::eyre::Result;
-use tracing::{error, info, debug};
+use tracing::{debug, error, info};
 
 pub mod account_map;
 pub mod transaction_map;
@@ -41,9 +41,13 @@ impl Migrator {
             .await?;
 
         let up_bank_transaction: Vec<up_bank::transactions::Transaction> = up_bank_transaction
-        .into_iter()
-        .filter(|e| self.account_map.iter().any(|f| f.up_account_id == e.relationships.account.data.as_ref().unwrap().id))
-        .collect();
+            .into_iter()
+            .filter(|e| {
+                self.account_map
+                    .iter()
+                    .any(|f| f.up_account_id == e.relationships.account.data.as_ref().unwrap().id)
+            })
+            .collect();
 
         info!("Processing {} transactions", up_bank_transaction.len());
         let mut not_found_counter = 0;
@@ -54,18 +58,21 @@ impl Migrator {
 
         for transaction in up_bank_transaction {
             match self.transaction_tracker.find_transaction(&transaction) {
-                transaction_tracker::Status::NotFound => { 
+                transaction_tracker::Status::NotFound => {
                     self.new_transaction(&transaction, &tag).await?;
                     not_found_counter += 1;
-                } ,
-                transaction_tracker::Status::FoundExact => { 
-                    debug!("Transaction({}) found in TransactionMap with no update required, skipping", transaction.id);
+                }
+                transaction_tracker::Status::FoundExact => {
+                    debug!(
+                        "Transaction({}) found in TransactionMap with no update required, skipping",
+                        transaction.id
+                    );
                     already_imported_counter += 1;
-                },
+                }
                 transaction_tracker::Status::FoundNotExact => {
                     self.update_transaction(&transaction, &tag).await?;
                     needs_update_counter += 1;
-                },
+                }
             };
         }
 
@@ -74,45 +81,63 @@ impl Migrator {
         Ok(())
     }
 
-    pub async fn update_transaction(&mut self, transaction: &up_bank::transactions::Transaction, tag: &str) -> Result<()> {
+    pub async fn update_transaction(
+        &mut self,
+        transaction: &up_bank::transactions::Transaction,
+        tag: &str,
+    ) -> Result<()> {
         debug!("coming soon tm");
         self.transaction_tracker.update_transaction(transaction)?;
         Ok(())
     }
 
-    pub async fn new_transaction(&mut self, transaction: &up_bank::transactions::Transaction, tag: &str) -> Result<()> {
-        let was_found = transaction_map::find_up_bank_transaction_in_fire_fly(&transaction, &self.fire_fly_api).await?;
+    pub async fn new_transaction(
+        &mut self,
+        transaction: &up_bank::transactions::Transaction,
+        tag: &str,
+    ) -> Result<()> {
+        let was_found =
+            transaction_map::find_up_bank_transaction_in_fire_fly(transaction, &self.fire_fly_api)
+                .await?;
         if !was_found {
             debug!("Importing up bank transaction: {}", transaction.id);
-            match self.migrate_transaction(&transaction, &Some(tag.to_string())).await {
-                Ok(_) => {},
+            match self
+                .migrate_transaction(transaction, &Some(tag.to_string()))
+                .await
+            {
+                Ok(_) => {}
                 Err(e) => error!(
                     "Transaction({}) failed to import, error: {:?}",
                     transaction.id, e
                 ),
             }
         } else {
-            debug!("Transaction {} was already found in fire fly", transaction.id)
+            debug!(
+                "Transaction {} was already found in fire fly",
+                transaction.id
+            )
         }
-        self.transaction_tracker.add_transaction(&transaction);
+        self.transaction_tracker.add_transaction(transaction);
         Ok(())
     }
 
     pub async fn migrate_transaction(
         &self,
         up_bank_transaction: &up_bank::transactions::Transaction,
-        import_tag: &Option<String>
+        import_tag: &Option<String>,
     ) -> Result<()> {
-        let mut fire_fly_payload =
-            transaction_map::convert_up_bank_transaction_to_fire_fly(up_bank_transaction, &self.account_map)?;
+        let mut fire_fly_payload = transaction_map::convert_up_bank_transaction_to_fire_fly(
+            up_bank_transaction,
+            &self.account_map,
+        )?;
         match import_tag {
             Some(tag) => fire_fly_payload.tags.push(tag.to_string()),
-            None => {},
+            None => {}
         }
         self.fire_fly_api
             .submit_new_transaction(&fire_fly_payload)
             .await?;
-        
+
         Ok(())
     }
 }
