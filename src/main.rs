@@ -1,11 +1,11 @@
 pub mod config;
 pub mod fire_fly;
 pub mod migrator;
-pub mod up_bank;
 pub mod operation;
+pub mod up_bank;
 use clap::Parser;
 use color_eyre::eyre::Result;
-use tracing::{info};
+use tracing::info;
 
 use config::Config;
 
@@ -23,6 +23,7 @@ pub struct Args {
     start_date: Option<String>,
     #[clap(short, long, value_parser)]
     end_date: Option<String>,
+    date_range: Option<i64>,
     #[clap(arg_enum, default_value_t = Action::Import)]
     action: Action,
 }
