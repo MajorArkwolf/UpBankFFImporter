@@ -4,17 +4,68 @@ use crate::migrator::Migrator;
 use crate::{fire_fly, up_bank};
 use chrono::{NaiveDate, Utc};
 use color_eyre::eyre::{eyre, Result};
+use tokio::signal;
 use tracing::{debug, error, info};
 
-pub async fn import_data(
-    args: Args,
+async fn run_import(
+    args: &Args,
+    up_bank: &up_bank::UpBank,
+    fire_fly: &fire_fly::FireFly,
+    config: &Config,
+    sleep_duration: &std::time::Duration,
+) -> Result<()> {
+    import_data(args, up_bank, fire_fly, config).await?;
+    debug!("Continues import cycle complete, sleeping until next cycle");
+    tokio::time::sleep(*sleep_duration).await;
+    Ok(())
+}
+
+pub async fn continues_import(
+    mut args: Args,
     up_bank: up_bank::UpBank,
     fire_fly: fire_fly::FireFly,
     config: Config,
 ) -> Result<()> {
-    let account_map = config.get_accounts(&up_bank, &fire_fly).await?;
+    info!("Continues import schedule started.");
+    if args.end_date.is_some() || args.start_date.is_some() {
+        return Err(eyre!(
+            "Start and End date can not be set when using a continues import operation"
+        ));
+    }
 
-    info!("Account validation completed, services connected");
+    match args.date_range {
+        Some(_) => {}
+        None => {
+            debug!("No date range specified, using date range of 30");
+            args.date_range = Some(30)
+        }
+    }
+
+    let sleep_duration = chrono::Duration::hours(config.time_between_imports).to_std()?;
+
+    loop {
+        tokio::select! {
+            _ = signal::ctrl_c() => {
+                info!("Interupt signal recieved, exiting loop");
+                break;
+            },
+            _ = run_import(&args, &up_bank, &fire_fly, &config, &sleep_duration) => {
+
+            }
+        }
+    }
+    Ok(())
+}
+
+pub async fn import_data(
+    args: &Args,
+    up_bank: &up_bank::UpBank,
+    fire_fly: &fire_fly::FireFly,
+    config: &Config,
+) -> Result<()> {
+    let account_map = config.get_accounts(up_bank, fire_fly).await?;
+
+    info!("Beginning import...");
     let mut start_date = match &args.start_date {
         Some(date_string) => match NaiveDate::parse_from_str(date_string, "%d-%m-%Y") {
             Ok(date_naive) => {
@@ -79,7 +130,7 @@ pub async fn import_data(
         }
     }
 
-    let mut migrator = Migrator::create(up_bank, fire_fly, account_map);
+    let mut migrator = Migrator::create(up_bank.clone(), fire_fly.clone(), account_map);
     info!("Beginning migration of data");
     migrator.migrate_transactions(start_date, end_date).await?;
 

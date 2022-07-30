@@ -8,6 +8,10 @@ use std::io::prelude::*;
 use std::vec;
 use tracing::debug;
 
+fn default_time_between_imports() -> i64 {
+    12
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     #[serde(rename = "upbank_pan")]
@@ -18,6 +22,8 @@ pub struct Config {
     pub fire_fly_base_url: String,
     #[serde(rename = "accounts")]
     pub account_mapping: Vec<String>,
+    #[serde(default = "default_time_between_imports")]
+    pub time_between_imports: i64, // In hours
 }
 
 impl Config {

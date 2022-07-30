@@ -13,6 +13,7 @@ use config::Config;
 enum Action {
     Import,
     GetAccountInfo,
+    ContinuesImport,
 }
 
 #[derive(Parser, Debug)]
@@ -52,8 +53,11 @@ async fn main() -> Result<()> {
     info!("Up Bank connected and information gathered");
 
     match args.action {
-        Action::Import => operation::import_data(args, up_bank, fire_fly, config).await?,
+        Action::Import => operation::import_data(&args, &up_bank, &fire_fly, &config).await?,
         Action::GetAccountInfo => operation::print_out_up_bank_account_info(up_bank)?,
+        Action::ContinuesImport => {
+            operation::continues_import(args, up_bank, fire_fly, config).await?
+        }
     }
 
     Ok(())

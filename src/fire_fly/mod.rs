@@ -8,7 +8,7 @@ pub mod accounts;
 pub mod general;
 pub mod transaction;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FireFly {
     client: reqwest::Client,
     base_url: String,
