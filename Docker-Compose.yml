@@ -1,8 +1,10 @@
 version: '3'
-
 services:
   up_bank_firefly_importer:
     build: .
+    entrypoint:
+      - ./target/release/up_bank_fidi
+      - continues-import
     environment:
       - RUST_LOG=debug
     volumes:
