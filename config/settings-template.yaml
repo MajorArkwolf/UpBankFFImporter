@@ -1,6 +1,8 @@
 upbank_pan: ""
 ff_pan: ""
 ff_url: "127.0.0.1:8082"
+# Time between each import cycle in hours
+#time_between_imports: 1
 accounts:
   - "Insert Account Here"
   - "Insert Account Here"
