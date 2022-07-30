@@ -63,8 +63,12 @@ impl Migrator {
         for transaction in up_bank_transaction {
             match self.transaction_tracker.find_transaction(&transaction) {
                 transaction_tracker::Status::NotFound => {
-                    self.new_transaction(&transaction, &tag).await?;
-                    not_found_counter += 1;
+                    if self.new_transaction(&transaction, &tag).await? {
+                        not_found_counter += 1;
+                    } else {
+                        // Since we do not already have a hash we wont know if it needs to be updated.
+                        already_imported_counter += 1;
+                    }
                 }
                 transaction_tracker::Status::FoundExact => {
                     debug!(
@@ -144,7 +148,7 @@ impl Migrator {
         &mut self,
         transaction: &up_bank::transactions::Transaction,
         tag: &str,
-    ) -> Result<()> {
+    ) -> Result<bool> {
         let was_found =
             transaction_map::find_up_bank_transaction_in_fire_fly(transaction, &self.fire_fly_api)
                 .await?;
@@ -167,7 +171,7 @@ impl Migrator {
             )
         }
         self.transaction_tracker.add_transaction(transaction);
-        Ok(())
+        Ok(!was_found)
     }
 
     pub async fn migrate_transaction(
