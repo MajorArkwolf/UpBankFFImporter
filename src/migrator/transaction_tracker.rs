@@ -19,6 +19,19 @@ pub enum TransactionType {
     Deposit = 0,
     Withdrawal = 1,
     Transfer = 2,
+    TransferDuplicate = 3,
+}
+
+impl TransactionType {
+    pub fn StringToEnum(value: &str) -> TransactionType {
+        if value == "transfer" {
+            Self::Transfer
+        } else if value == "withdrawl" {
+            Self::Withdrawal
+        } else {
+            Self::Deposit
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -4,7 +4,10 @@ use crate::{
     fire_fly, migrator::transaction_map::get_fire_fly_transction_from_up_bank_id, up_bank,
 };
 
-use self::{account_map::AccountMap, transaction_tracker::TransactionHashData};
+use self::{
+    account_map::AccountMap,
+    transaction_tracker::{TransactionHashData, TransactionType},
+};
 use color_eyre::eyre::{eyre, Result};
 use tracing::{debug, error, info};
 
@@ -178,23 +181,29 @@ impl Migrator {
         &self,
         up_bank_transaction: &up_bank::transactions::Transaction,
         import_tag: &Option<String>,
-    ) -> Result<()> {
+    ) -> Result<TransactionType> {
         match transaction_map::convert_up_bank_transaction_to_fire_fly(
             up_bank_transaction,
             &self.account_map,
         )? {
-            Some(mut fire_fly_payload) => match import_tag {
-                Some(tag) => {
-                    fire_fly_payload.tags.push(tag.to_string());
-                    self.fire_fly_api
-                        .submit_new_transaction(&fire_fly_payload)
-                        .await?;
-                }
-                None => {}
-            },
-            None => {}
+            transaction_map::TransferType::Transaction(mut fire_fly_payload) => {
+                match import_tag {
+                    Some(tag) => {
+                        fire_fly_payload.tags.push(tag.to_string());
+                    }
+                    None => {}
+                };
+                self.fire_fly_api
+                    .submit_new_transaction(&fire_fly_payload)
+                    .await?;
+                Ok(TransactionType::StringToEnum(
+                    &fire_fly_payload.transaction_type,
+                ))
+            }
+            transaction_map::TransferType::TransactionDuplicate => {
+                Ok(TransactionType::TransferDuplicate)
+            }
         }
-        Ok(())
     }
 }
 
