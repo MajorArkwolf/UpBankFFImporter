@@ -1,4 +1,7 @@
-use crate::{fire_fly, up_bank};
+use crate::{
+    fire_fly::{self, transaction::TransactionPayload},
+    up_bank,
+};
 use color_eyre::eyre::{eyre, Result};
 
 use super::account_map;
@@ -35,7 +38,7 @@ pub fn is_account_internal(
 pub fn convert_up_bank_transaction_to_fire_fly(
     up_bank_transaction: &up_bank::transactions::Transaction,
     account_map: &[account_map::AccountMap],
-) -> Result<fire_fly::transaction::TransactionPayload> {
+) -> Result<Option<TransactionPayload>> {
     let mut fire_fly_transaction = fire_fly::transaction::TransactionPayload::default();
 
     fire_fly_transaction.external_id = Some(up_bank_transaction.id.clone());
@@ -143,9 +146,10 @@ pub fn convert_up_bank_transaction_to_fire_fly(
             Some(transfer_account) => {
                 match is_account_internal(&transfer_account.id, account_map) {
                     Some(fire_fly_id) => {
-                        fire_fly_transaction.source_id = Some(fire_fly_id);
-                        fire_fly_transaction.transaction_type = "transfer".to_string();
-                    } // If its an account mapped in firefly then its better to link it directly.
+                        //fire_fly_transaction.source_id = Some(fire_fly_id);
+                        //fire_fly_transaction.transaction_type = "transfer".to_string();
+                        return Ok(None); // To avoid duplicate transfers from showing up we return None
+                    }
                     None => {
                         fire_fly_transaction.source_name = Some(transfer_account.dat_type.clone())
                     } // Else just link the name of the account instead.
@@ -157,5 +161,5 @@ pub fn convert_up_bank_transaction_to_fire_fly(
         }
     }
 
-    Ok(fire_fly_transaction)
+    Ok(Some(fire_fly_transaction))
 }
