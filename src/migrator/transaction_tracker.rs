@@ -1,4 +1,4 @@
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::{eyre, Error, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
@@ -13,18 +13,31 @@ pub enum Status {
     FoundNotExact, // Found but the hash didnt match
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd)]
+#[serde(tag = "type")]
+pub enum TransactionType {
+    Deposit = 0,
+    Withdrawal = 1,
+    Transfer = 2,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct TransactionHash {
     pub id: String,
+    pub transaction_type: TransactionType,
     pub hash: u64,
 }
 pub struct TransactionHashData {
-    transaction_map: HashMap<String, u64>,
+    transaction_map: HashMap<String, TransactionHash>,
 }
 
 impl TransactionHash {
-    fn new(id: String, hash: u64) -> Self {
-        Self { id, hash }
+    fn new(id: String, transaction_type: TransactionType, hash: u64) -> Self {
+        Self {
+            id,
+            transaction_type,
+            hash,
+        }
     }
 }
 
@@ -33,7 +46,11 @@ impl Drop for TransactionHashData {
         let wtr = csv::Writer::from_path("./config/transaction.csv");
         match wtr {
             Ok(mut wtr) => self.transaction_map.iter().for_each(move |f| {
-                match wtr.serialize(TransactionHash::new(f.0.to_string(), *f.1)) {
+                match wtr.serialize(TransactionHash::new(
+                    f.0.to_string(),
+                    f.1.transaction_type,
+                    f.1.hash,
+                )) {
                     Ok(_) => {}
                     Err(err) => error!("Failed to serialize transaction to csv file: {}", err),
                 }
@@ -60,9 +77,9 @@ impl TransactionHashData {
         let mut transaction_map = HashMap::new();
         transaction_vector
             .into_iter()
-            .for_each(|f| match transaction_map.insert(f.id, f.hash) {
+            .for_each(|f| match transaction_map.insert(f.id, f) {
                 Some(new_val) => {
-                    error!("Key already in map, updated value to: {}", new_val)
+                    error!("Key already in map, updated value to: {}", new_val.id)
                 }
                 None => {}
             });
@@ -73,7 +90,7 @@ impl TransactionHashData {
         let hash = calculate_hash(&transaction);
         match self.transaction_map.get(&transaction.id) {
             Some(hash_val) => {
-                if *hash_val == hash {
+                if hash_val.hash == hash {
                     Status::FoundExact
                 } else {
                     Status::FoundNotExact
@@ -83,20 +100,27 @@ impl TransactionHashData {
         }
     }
 
-    pub fn add_transaction(&mut self, transaction: &up_bank::transactions::Transaction) {
+    pub fn add_transaction(
+        &mut self,
+        transaction: &up_bank::transactions::Transaction,
+        transaction_type: TransactionType,
+    ) {
         let hash = calculate_hash(&transaction);
         match self.transaction_map.get(&transaction.id) {
             Some(hash_val) => {
-                if *hash_val == hash {
+                if hash_val.hash == hash {
                     debug!("Transaction found with same hash, no update");
                     return;
                 }
             }
             None => {}
         }
-        match self.transaction_map.insert(transaction.id.clone(), hash) {
+        match self.transaction_map.insert(
+            transaction.id.clone(),
+            TransactionHash::new(transaction.id.clone(), transaction_type, hash),
+        ) {
             Some(new_val) => warn!(
-                "Transaction id({}) was already found, updated hash to: {}",
+                "Transaction id({}) was already found, updated hash to: {:?}",
                 transaction.id, new_val
             ),
             None => {}
@@ -108,10 +132,14 @@ impl TransactionHashData {
         transaction: &up_bank::transactions::Transaction,
     ) -> Result<()> {
         let hash = calculate_hash(&transaction);
-        match self.transaction_map.insert(transaction.id.clone(), hash) {
-            Some(_) => Ok(()),
-            None => Err(eyre!("Key was not found when updating transaction, update should only be called on an existing key")),
-        }
+
+        let current_val = self
+            .transaction_map
+            .get(&transaction.id)
+            .ok_or(eyre!("Should have had a value when calling update"))?;
+
+        current_val.hash = hash;
+        Ok(())
     }
 }
 
