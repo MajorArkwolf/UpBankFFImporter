@@ -13,7 +13,7 @@ pub enum Status {
     FoundNotExact, // Found but the hash didnt match
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd, Copy)]
 #[serde(tag = "type")]
 pub enum TransactionType {
     Deposit = 0,
@@ -23,7 +23,7 @@ pub enum TransactionType {
 }
 
 impl TransactionType {
-    pub fn StringToEnum(value: &str) -> TransactionType {
+    pub fn string_to_enum(value: &str) -> TransactionType {
         if value == "transfer" {
             Self::Transfer
         } else if value == "withdrawl" {
@@ -90,7 +90,7 @@ impl TransactionHashData {
         let mut transaction_map = HashMap::new();
         transaction_vector
             .into_iter()
-            .for_each(|f| match transaction_map.insert(f.id, f) {
+            .for_each(|f| match transaction_map.insert(f.id.clone(), f) {
                 Some(new_val) => {
                     error!("Key already in map, updated value to: {}", new_val.id)
                 }
@@ -146,12 +146,16 @@ impl TransactionHashData {
     ) -> Result<()> {
         let hash = calculate_hash(&transaction);
 
-        let current_val = self
+        let mut current_val = self
             .transaction_map
             .get(&transaction.id)
-            .ok_or(eyre!("Should have had a value when calling update"))?;
+            .ok_or(eyre!("Should have had a value when calling update"))?.clone();
 
         current_val.hash = hash;
+
+        self.transaction_map.insert(transaction.id.clone(), current_val);
+
+        
         Ok(())
     }
 }

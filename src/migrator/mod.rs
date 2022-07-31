@@ -161,7 +161,9 @@ impl Migrator {
                 .migrate_transaction(transaction, &Some(tag.to_string()))
                 .await
             {
-                Ok(_) => {}
+                Ok(resp) => {
+                    self.transaction_tracker.add_transaction(transaction, resp);
+                }
                 Err(e) => error!(
                     "Transaction({}) failed to import, error: {:?}",
                     transaction.id, e
@@ -173,7 +175,7 @@ impl Migrator {
                 transaction.id
             )
         }
-        self.transaction_tracker.add_transaction(transaction);
+        
         Ok(!was_found)
     }
 
@@ -196,7 +198,7 @@ impl Migrator {
                 self.fire_fly_api
                     .submit_new_transaction(&fire_fly_payload)
                     .await?;
-                Ok(TransactionType::StringToEnum(
+                Ok(TransactionType::string_to_enum(
                     &fire_fly_payload.transaction_type,
                 ))
             }
