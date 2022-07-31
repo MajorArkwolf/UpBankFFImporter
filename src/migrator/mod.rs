@@ -179,18 +179,21 @@ impl Migrator {
         up_bank_transaction: &up_bank::transactions::Transaction,
         import_tag: &Option<String>,
     ) -> Result<()> {
-        let mut fire_fly_payload = transaction_map::convert_up_bank_transaction_to_fire_fly(
+        match transaction_map::convert_up_bank_transaction_to_fire_fly(
             up_bank_transaction,
             &self.account_map,
-        )?;
-        match import_tag {
-            Some(tag) => fire_fly_payload.tags.push(tag.to_string()),
+        )? {
+            Some(mut fire_fly_payload) => match import_tag {
+                Some(tag) => {
+                    fire_fly_payload.tags.push(tag.to_string());
+                    self.fire_fly_api
+                        .submit_new_transaction(&fire_fly_payload)
+                        .await?;
+                }
+                None => {}
+            },
             None => {}
         }
-        self.fire_fly_api
-            .submit_new_transaction(&fire_fly_payload)
-            .await?;
-
         Ok(())
     }
 }

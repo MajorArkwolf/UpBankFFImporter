@@ -4,6 +4,11 @@ use crate::{
 };
 use color_eyre::eyre::{eyre, Result};
 
+pub enum TransferType {
+    Transaction(TransactionPayload),
+    TransactionDuplicate,
+}
+
 use super::account_map;
 
 pub async fn find_up_bank_transaction_in_fire_fly(
@@ -38,7 +43,7 @@ pub fn is_account_internal(
 pub fn convert_up_bank_transaction_to_fire_fly(
     up_bank_transaction: &up_bank::transactions::Transaction,
     account_map: &[account_map::AccountMap],
-) -> Result<Option<TransactionPayload>> {
+) -> Result<TransferType> {
     let mut fire_fly_transaction = fire_fly::transaction::TransactionPayload::default();
 
     fire_fly_transaction.external_id = Some(up_bank_transaction.id.clone());
@@ -148,7 +153,7 @@ pub fn convert_up_bank_transaction_to_fire_fly(
                     Some(fire_fly_id) => {
                         //fire_fly_transaction.source_id = Some(fire_fly_id);
                         //fire_fly_transaction.transaction_type = "transfer".to_string();
-                        return Ok(None); // To avoid duplicate transfers from showing up we return None
+                        return Ok(TransferType::TransactionDuplicate); // To avoid duplicate transfers from showing up we return None
                     }
                     None => {
                         fire_fly_transaction.source_name = Some(transfer_account.dat_type.clone())
@@ -161,5 +166,5 @@ pub fn convert_up_bank_transaction_to_fire_fly(
         }
     }
 
-    Ok(Some(fire_fly_transaction))
+    Ok(TransferType::Transaction(fire_fly_transaction))
 }
