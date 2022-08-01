@@ -108,10 +108,11 @@ pub fn convert_up_bank_transaction_to_fire_fly(
         match &up_bank_transaction.relationships.transfer_account.data {
             Some(transfer_account) => {
                 match is_account_internal(&transfer_account.id, account_map) {
-                    Some(fire_fly_id) => {
-                        fire_fly_transaction.destination_id = Some(fire_fly_id);
+                    Some(_fire_fly_id) => {
+                        return Ok(TransferType::TransactionDuplicate); // To avoid duplicate transfers from showing up we return None
+                        //fire_fly_transaction.destination_id = Some(fire_fly_id);
                         // Since this is moving accounts we create a transfer.
-                        fire_fly_transaction.transaction_type = "transfer".to_string();
+                        //fire_fly_transaction.transaction_type = "transfer".to_string();
                     } // If its an account mapped in firefly then its better to link it directly.
                     None => {
                         fire_fly_transaction.destination_name =
@@ -151,9 +152,9 @@ pub fn convert_up_bank_transaction_to_fire_fly(
             Some(transfer_account) => {
                 match is_account_internal(&transfer_account.id, account_map) {
                     Some(fire_fly_id) => {
-                        //fire_fly_transaction.source_id = Some(fire_fly_id);
-                        //fire_fly_transaction.transaction_type = "transfer".to_string();
-                        return Ok(TransferType::TransactionDuplicate); // To avoid duplicate transfers from showing up we return None
+                        fire_fly_transaction.source_id = Some(fire_fly_id);
+                        fire_fly_transaction.transaction_type = "transfer".to_string();
+                        //return Ok(TransferType::TransactionDuplicate); // To avoid duplicate transfers from showing up we return None
                     }
                     None => {
                         fire_fly_transaction.source_name = Some(transfer_account.dat_type.clone())

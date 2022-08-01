@@ -1,4 +1,4 @@
-use color_eyre::eyre::{eyre, Error, Result};
+use color_eyre::eyre::{eyre, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
@@ -14,7 +14,6 @@ pub enum Status {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, PartialOrd, Copy)]
-#[serde(tag = "type")]
 pub enum TransactionType {
     Deposit = 0,
     Withdrawal = 1,
