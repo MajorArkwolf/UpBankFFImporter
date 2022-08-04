@@ -25,6 +25,10 @@ fn generate_url(path: &str) -> String {
 
 impl UpBank {
     pub fn create(access_token: String) -> Result<Self> {
+        if access_token.is_empty() {
+            return Err(eyre!("Up Bank access token was not set"));
+        }
+
         let access_token = format!("Bearer {access_token}",);
         let mut auth_value = header::HeaderValue::from_str(access_token.as_str())?;
         auth_value.set_sensitive(true);

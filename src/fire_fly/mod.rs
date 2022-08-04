@@ -20,6 +20,13 @@ fn generate_url(base: &str, path: &str) -> String {
 
 impl FireFly {
     pub fn create(access_token: String, base_url: String) -> Result<Self> {
+        if access_token.is_empty() {
+            return Err(eyre!("Firefly access token was empty"));
+        }
+        if base_url.is_empty() {
+            return Err(eyre!("Firefly base url was empty"));
+        }
+
         let access_token = format!("Bearer {access_token}",);
         let mut auth_value = header::HeaderValue::from_str(access_token.as_str())?;
         auth_value.set_sensitive(true);
