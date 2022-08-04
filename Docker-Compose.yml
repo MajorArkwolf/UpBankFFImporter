@@ -1,7 +1,7 @@
 version: '3'
 services:
   up_bank_firefly_importer:
-    build: .
+    image: ghcr.io/majorarkwolf/upbankffimporter:main
     entrypoint:
       - ./target/release/up_bank_fidi
       - continues-import
