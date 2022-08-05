@@ -18,7 +18,8 @@ pub enum TransactionType {
     Deposit = 0,
     Withdrawal = 1,
     Transfer = 2,
-    TransferDuplicate = 3,
+    TransferDuplicate = 3, // An internal transfer has two transactions, in and out but firefly only wants one. This indicates that the recv transfer was intetionally not imported.
+    Duplicate = 4,
 }
 
 impl TransactionType {
@@ -87,14 +88,14 @@ impl TransactionHashData {
             Err(err) => error!("Failed to open file, got the following error: {}", err),
         }
         let mut transaction_map = HashMap::new();
-        transaction_vector
-            .into_iter()
-            .for_each(|f| match transaction_map.insert(f.id.clone(), f) {
+        transaction_vector.into_iter().for_each(|f| {
+            match transaction_map.insert(f.id.clone(), f) {
                 Some(new_val) => {
                     error!("Key already in map, updated value to: {}", new_val.id)
                 }
                 None => {}
-            });
+            }
+        });
         Self { transaction_map }
     }
 
@@ -148,13 +149,14 @@ impl TransactionHashData {
         let mut current_val = self
             .transaction_map
             .get(&transaction.id)
-            .ok_or(eyre!("Should have had a value when calling update"))?.clone();
+            .ok_or(eyre!("Should have had a value when calling update"))?
+            .clone();
 
         current_val.hash = hash;
 
-        self.transaction_map.insert(transaction.id.clone(), current_val);
+        self.transaction_map
+            .insert(transaction.id.clone(), current_val);
 
-        
         Ok(())
     }
 }

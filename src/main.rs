@@ -48,7 +48,7 @@ async fn main() -> Result<()> {
     )?;
 
     info!("FireFly and UpBank api initilised");
-
+    up_bank.ping().await?;
     up_bank.populate_data().await?;
     info!("Up Bank connected and information gathered");
 

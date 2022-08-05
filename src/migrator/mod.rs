@@ -71,6 +71,8 @@ impl Migrator {
                     } else {
                         // Since we do not already have a hash we wont know if it needs to be updated.
                         already_imported_counter += 1;
+                        self.transaction_tracker
+                            .add_transaction(&transaction, TransactionType::Duplicate);
                     }
                 }
                 transaction_tracker::Status::FoundExact => {
@@ -79,6 +81,8 @@ impl Migrator {
                         transaction.id
                     );
                     already_imported_counter += 1;
+                    self.transaction_tracker
+                        .add_transaction(&transaction, TransactionType::Duplicate);
                 }
                 transaction_tracker::Status::FoundNotExact => {
                     self.update_transaction(&transaction).await?;
@@ -175,7 +179,7 @@ impl Migrator {
                 transaction.id
             )
         }
-        
+
         Ok(!was_found)
     }
 
