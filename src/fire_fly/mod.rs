@@ -77,7 +77,7 @@ impl FireFly {
         Ok(account)
     }
 
-    pub async fn get_account_by_account_number(&self, id: &str) -> Result<Account> {
+    pub async fn get_account_by_account_number(&self, id: &str) -> Result<Option<Account>> {
         let mut url_address = generate_url(&self.base_url, "search/accounts");
         url_address = format!("{}?query={}&type=all&field=number", url_address, id);
         let accounts = self
@@ -89,14 +89,11 @@ impl FireFly {
             .await?
             .data;
 
-        if accounts.len() != 1 {
+        if accounts.len() > 1 {
             return Err(eyre!("When trying to find a unique account by account id, {} accounts were found, should have been 1", accounts.len()));
         }
 
-        let account = accounts
-            .into_iter()
-            .next()
-            .ok_or(eyre!("An account should have existed in the array"))?;
+        let account = accounts.into_iter().next();
 
         Ok(account)
     }

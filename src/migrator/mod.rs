@@ -214,7 +214,6 @@ impl Migrator {
 }
 
 fn dedup(v: &mut Vec<String>) {
-    // note the Copy constraint
     let mut uniques = HashSet::new();
     v.retain(|e| uniques.insert(e.clone()));
 }

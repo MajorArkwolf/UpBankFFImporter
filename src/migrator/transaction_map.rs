@@ -87,6 +87,7 @@ pub fn convert_up_bank_transaction_to_fire_fly(
     }
 
     if up_bank_transaction.attributes.amount.value_in_base_units < 0 {
+        // If its less then $0 then its likely a widthdrawl or a transfer
         fire_fly_transaction.transaction_type = "withdrawal".to_string();
         // If value is less then 0, then the transaction is the source
         match up_bank_transaction
@@ -109,10 +110,9 @@ pub fn convert_up_bank_transaction_to_fire_fly(
             Some(transfer_account) => {
                 match is_account_internal(&transfer_account.id, account_map) {
                     Some(_fire_fly_id) => {
-                        return Ok(TransferType::TransactionDuplicate); // To avoid duplicate transfers from showing up we return None
-                        //fire_fly_transaction.destination_id = Some(fire_fly_id);
-                        // Since this is moving accounts we create a transfer.
-                        //fire_fly_transaction.transaction_type = "transfer".to_string();
+                        // Round ups are directly linked against the transaction, but are seperate on the recieving
+                        // end, so we will handle all transfers when its a positive value only.
+                        return Ok(TransferType::TransactionDuplicate);
                     } // If its an account mapped in firefly then its better to link it directly.
                     None => {
                         fire_fly_transaction.destination_name =
@@ -154,7 +154,6 @@ pub fn convert_up_bank_transaction_to_fire_fly(
                     Some(fire_fly_id) => {
                         fire_fly_transaction.source_id = Some(fire_fly_id);
                         fire_fly_transaction.transaction_type = "transfer".to_string();
-                        //return Ok(TransferType::TransactionDuplicate); // To avoid duplicate transfers from showing up we return None
                     }
                     None => {
                         fire_fly_transaction.source_name = Some(transfer_account.dat_type.clone())
@@ -162,7 +161,8 @@ pub fn convert_up_bank_transaction_to_fire_fly(
                 }
             }
             None => {
-                fire_fly_transaction.source_name = Some("(unknown destination account)".to_string())
+                fire_fly_transaction.source_name =
+                    Some(up_bank_transaction.attributes.description.clone())
             }
         }
     }

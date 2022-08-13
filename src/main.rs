@@ -20,13 +20,13 @@ enum Action {
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
     /// Name of the person to greet
-    #[clap(short, long, value_parser)]
+    #[clap(env, short, long, value_parser)]
     start_date: Option<String>,
-    #[clap(short, long, value_parser)]
+    #[clap(env, short, long, value_parser)]
     end_date: Option<String>,
-    #[clap(short, long, value_parser)]
+    #[clap(env, short, long, value_parser)]
     date_range: Option<i64>,
-    #[clap(arg_enum, default_value_t = Action::Import)]
+    #[clap(env, arg_enum, default_value_t = Action::Import)]
     action: Action,
 }
 
