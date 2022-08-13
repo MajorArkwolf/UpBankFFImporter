@@ -5,4 +5,4 @@ COPY ./LICENSE.md ./LICENSE.md
 COPY ./config/settings-template.yaml ./config/settings-template.yaml
 RUN apk add musl-dev musl
 RUN cargo install -v --path .
-ENTRYPOINT "up_bank_fidi"
+CMD up_bank_fidi
