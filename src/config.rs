@@ -1,7 +1,7 @@
 use super::migrator::account_map::AccountMap;
 use crate::fire_fly::FireFly;
 use crate::up_bank::UpBank;
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::Result;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;

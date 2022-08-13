@@ -2,11 +2,13 @@ version: '3'
 services:
   up_bank_firefly_importer:
     image: ghcr.io/majorarkwolf/upbankffimporter:main
-    entrypoint:
-      - ./target/release/up_bank_fidi
-      - continues-import
+    build: .
     environment:
-      - RUST_LOG=debug
+      - RUST_LOG=info # Set to debug if issues occur
+      - ACTION=get-account-info # Change this once firefly is setup to either "continues-import" or "import"
+      # - DATE_RANGE=30 # Not specifying will get all transaction avaliable, after first run its better to use  a fixed range      
+      # - START_DATE= # Not required but can be used
+      # - END_DATE= # Not required but can be used
     volumes:
       - ./config:/config
       - ./logs:/logs
