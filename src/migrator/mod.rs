@@ -61,7 +61,7 @@ impl Migrator {
         let mut needs_update_counter = 0;
         let mut already_imported_counter = 0;
 
-        let tag = format!("UBFF3Import-{}", chrono::offset::Local::now());
+        let tag: String = "UBFF3Import".to_string();
 
         for transaction in up_bank_transaction {
             match self.transaction_tracker.find_transaction(&transaction) {
