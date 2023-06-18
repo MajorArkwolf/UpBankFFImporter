@@ -89,11 +89,8 @@ impl TransactionHashData {
         }
         let mut transaction_map = HashMap::new();
         transaction_vector.into_iter().for_each(|f| {
-            match transaction_map.insert(f.id.clone(), f) {
-                Some(new_val) => {
-                    error!("Key already in map, updated value to: {}", new_val.id)
-                }
-                None => {}
+            if let Some(new_val) = transaction_map.insert(f.id.clone(), f) {
+                error!("Key already in map, updated value to: {}", new_val.id)
             }
         });
         Self { transaction_map }
