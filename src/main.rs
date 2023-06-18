@@ -3,13 +3,13 @@ pub mod fire_fly;
 pub mod migrator;
 pub mod operation;
 pub mod up_bank;
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use color_eyre::eyre::Result;
 use tracing::info;
 
 use config::Config;
 
-#[derive(Parser, Debug, Clone, clap::ArgEnum)]
+#[derive(Parser, Debug, Clone, ValueEnum)]
 enum Action {
     Import,
     GetAccountInfo,
@@ -26,7 +26,7 @@ pub struct Args {
     end_date: Option<String>,
     #[clap(env, short, long, value_parser)]
     date_range: Option<i64>,
-    #[clap(env, arg_enum, default_value_t = Action::Import)]
+    #[clap(env, value_enum, default_value_t = Action::Import)]
     action: Action,
 }
 
