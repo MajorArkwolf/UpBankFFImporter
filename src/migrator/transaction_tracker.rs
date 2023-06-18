@@ -116,24 +116,20 @@ impl TransactionHashData {
         transaction_type: TransactionType,
     ) {
         let hash = calculate_hash(&transaction);
-        match self.transaction_map.get(&transaction.id) {
-            Some(hash_val) => {
-                if hash_val.hash == hash {
-                    debug!("Transaction found with same hash, no update");
-                    return;
-                }
+        if let Some(hash_val) = self.transaction_map.get(&transaction.id) {
+            if hash_val.hash == hash {
+                debug!("Transaction found with same hash, no update");
+                return;
             }
-            None => {}
         }
-        match self.transaction_map.insert(
+        if let Some(new_val) = self.transaction_map.insert(
             transaction.id.clone(),
             TransactionHash::new(transaction.id.clone(), transaction_type, hash),
         ) {
-            Some(new_val) => warn!(
+            warn!(
                 "Transaction id({}) was already found, updated hash to: {:?}",
                 transaction.id, new_val
-            ),
-            None => {}
+            )
         }
     }
 
