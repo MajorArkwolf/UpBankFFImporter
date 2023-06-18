@@ -111,26 +111,20 @@ impl UpBank {
 
         let time = Utc::now().naive_local().time();
 
-        match start_date {
-            Some(date) => {
-                let date_time = Local
-                    .from_local_datetime(&NaiveDateTime::new(date, time))
-                    .unwrap();
-                let date_filter = ("filter[since]".to_string(), date_time.to_rfc3339());
-                params.push(date_filter);
-            }
-            None => {}
+        if let Some(date) = start_date {
+            let date_time = Local
+                .from_local_datetime(&NaiveDateTime::new(date, time))
+                .unwrap();
+            let date_filter = ("filter[since]".to_string(), date_time.to_rfc3339());
+            params.push(date_filter);
         }
 
-        match end_date {
-            Some(date) => {
-                let date_time = Local
-                    .from_local_datetime(&NaiveDateTime::new(date, time))
-                    .unwrap();
-                let date_filter = ("filter[until]".to_string(), date_time.to_rfc3339());
-                params.push(date_filter);
-            }
-            None => {}
+        if let Some(date) = end_date {
+            let date_time = Local
+                .from_local_datetime(&NaiveDateTime::new(date, time))
+                .unwrap();
+            let date_filter = ("filter[until]".to_string(), date_time.to_rfc3339());
+            params.push(date_filter);
         }
 
         let mut request_url = generate_url("transactions");
