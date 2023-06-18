@@ -5,7 +5,7 @@ use crate::{
 use color_eyre::eyre::{eyre, Result};
 
 pub enum TransferType {
-    Transaction(TransactionPayload),
+    Transaction(Box<TransactionPayload>),
     TransactionDuplicate,
 }
 
@@ -167,5 +167,5 @@ pub fn convert_up_bank_transaction_to_fire_fly(
         }
     }
 
-    Ok(TransferType::Transaction(fire_fly_transaction))
+    Ok(TransferType::Transaction(Box::new(fire_fly_transaction)))
 }
