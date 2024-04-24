@@ -80,7 +80,7 @@ pub fn convert_up_bank_transaction_to_fire_fly(
 
     match &up_bank_transaction.attributes.foreign_amount {
         Some(foriegn_amount) => {
-            fire_fly_transaction.foreign_amount = Some(foriegn_amount.value.clone());
+            fire_fly_transaction.foreign_amount = Some(foriegn_amount.value.clone().replace('-', ""));
             fire_fly_transaction.foreign_currency_code = Some(foriegn_amount.currency_code.clone());
         }
         None => fire_fly_transaction.foreign_amount = Some("0".to_string()),
