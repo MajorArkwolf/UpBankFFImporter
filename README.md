@@ -1,7 +1,7 @@
 # UP Bank to FireFly III Data Importer
 **This is still a work in progress**
 
-This program is designed to import transaction from Up Bank Australia into Firefly 3 either as a once off or continously. It is also able to detect if a transaction has been updated such as a new tag is added or category change in the Up Bank portal which will then update the transaction in Firefly to reflect this change. 
+This program is designed to import transactions from Up Bank Australia into Firefly 3 either as a once-off or continuously. It is also able to detect if a transaction has been updated such as a new tag being added or a category change in the Up Bank portal which will then update the transaction in Firefly to reflect this change. 
 
 ## Building
 Building is simple, just ensure you have rust installed and run the following,
@@ -10,13 +10,18 @@ or
 ``cargo build --release``
 
 ## Setup
-- Copy the settings-template.yaml and rename it just settings.yaml
-- Add the url to your Firefly instance (eg 192.168.0.2:8083)
-- For each up bank account you wish to import data into firefly, do the following...
-  - Create a firefly account that represents your Up Bank Account
-  - In firefly add the unique id from Up Bank into the Firefly Account Number field. (This creates a direct link from the importer tool)
-  - Note: Passing the action "get-account-info" into the executable will print out all your Up Bank account information to the terminal which can be used to help setup your Firefly account information.
-  - Add the Upbank id into the accounts section in the settings.yaml, this tells the importer to only import this data.
+- Copy the ``settings-template.yaml`` and rename it just ``settings.yaml``
+- Get the Up Bank PAN code and paste it inside of the quotes in ``settings.yaml`` -> ``upbank_pan``
+- Get the Firefly PAN code and paste it inside of the quotes in ``settings.yaml`` -> ``ff_pan``
+- Add the url to your Firefly instance (eg 192.168.0.2:8083) into the ``settings.yaml``
+- For each up bank account you wish to import into Firefly, do the following...
+  - Get the unique GUID from UpBank for the account you wish to create and note it down.
+    - Note: Passing the action "get-account-info" into the executable will print out all your Up Bank account information to the terminal which can be used to help set up your Firefly account information.
+  - Create a new asset account inside of Firefly that represents the Up Bank Account you wish to import
+  - Under the new asset account you created in Firefly, under ``Optional fields`` -> ``Account Number``, paste the GUID from Up Bank. 
+
+### Docker-Compose.yml
+If you are using the provided Docker-Compose.yml, after you have finished your first import, you should uncomment ``DATE_RANGE=30``, as this will considerably speed up the process by fetching less data.
 
 ## Running
 Ensure you have setup your settings.yaml file before continuing
@@ -33,7 +38,7 @@ Linux & macOS :
 Windows: ``up_bank_fidi.exe get-account-information``
 
 ### Running the migrator tool
-See command line help assistant for setting start and end dates or date ranges.
+See the command line help assistant for setting start and end dates or date ranges.
 
 Linux & macOS : 
 ``up_bank_fidi``
