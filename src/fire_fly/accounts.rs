@@ -43,7 +43,7 @@ pub struct Attributes {
     pub iban: Option<String>,
     pub bic: Option<String>,
     pub account_number: Option<String>,
-    pub opening_balance: String,
+    pub opening_balance: Option<String>,
     pub current_debt: Option<String>,
     pub opening_balance_date: Option<String>,
     pub virtual_balance: String,
